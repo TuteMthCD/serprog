@@ -4,7 +4,7 @@
 #include "pico/stdio.h"
 #include "pico/stdlib.h"
 
-void led_task(void*) {
+void vLedTask(void*) {
     bool pin = 0;
     while(true) {
         pin = !pin;
@@ -25,12 +25,15 @@ int main() {
         printf("cyw43 init correctly");
     }
 
-    xTaskCreate(&led_task, "LED_Task", 256, NULL, 1, NULL);
+    xTaskCreate(&vLedTask, "vLedTask", 256, NULL, TASK_IDLE, NULL);
 
     /*      FINSH LED   */
 
     QActionQueue = xQueueCreate(QACTION_QUEUE_LEN, sizeof(Action_t));
     RActionQueue = xQueueCreate(RACTION_QUEUE_LEN, sizeof(char));
+
+    xTaskCreate(&vUSBTask, "vUSBTask", 2 * 1024, NULL, TASK_MEDIUM, NULL);
+
 
     vTaskStartScheduler();
 }

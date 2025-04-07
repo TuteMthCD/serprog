@@ -4,6 +4,12 @@
 
 #include <cstdint>
 
+#define TASK_IDLE 1
+#define TASK_LOW 2
+#define TASK_MEDIUM 3
+#define TASK_HIGH 4
+#define TASK_CRITICAL 5
+
 #define SERPROG_NAME "RP2040serprog"
 
 typedef enum {
@@ -50,3 +56,5 @@ static QueueHandle_t QActionQueue;
 
 #define RACTION_QUEUE_LEN 256
 static QueueHandle_t RActionQueue;
+
+void vUSBTask(void*);
