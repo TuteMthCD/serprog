@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 3.12)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
 # Name project
-SET(ProjectName rp2040Freertos)
+SET(ProjectName serProg)
 
 set(PICO_BOARD pico_w)
 
