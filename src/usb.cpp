@@ -1,4 +1,3 @@
-#include "FreeRTOSConfig.h"
 #include "shared.h"
 
 #include "pico/stdio.h"
@@ -75,8 +74,8 @@ void vUSBTask(void*) {
             action.len = 1;
 
             xQueueSend(QActionQueue, &action, MAX_DELAY);
-            xQueueReceive(RActionQueue, &rbuff, MAX_DELAY);
-            printf("%1s", rbuff);
+            xQueueReceive(RActionQueue, &rbuff[0], MAX_DELAY);
+            printf("%c", rbuff[0]);
 
             break;
         case CMD_READ_NBYTES:
