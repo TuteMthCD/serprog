@@ -49,6 +49,7 @@ struct Action_t {
     enum proceeding { Read, Write, Pin } proc;
     int32_t addr;
     int32_t len;
+    uint8_t data[];
 };
 
 #define QACTION_QUEUE_LEN 128

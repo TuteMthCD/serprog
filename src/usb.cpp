@@ -14,11 +14,7 @@ void vUSBTask(void*) {
     char* buff = (char*)malloc(sizeof(char) * MAX_BUFFER_SIZE);
     memset(buff, 0, MAX_BUFFER_SIZE);
 
-    char* rbuff = (char*)malloc(sizeof(char) * MAX_BUFFER_SIZE);
-    memset(rbuff, 0, MAX_BUFFER_SIZE);
-
     stdio_flush();
-
 
     int index = 0;
     int c = '\n';
@@ -34,7 +30,6 @@ void vUSBTask(void*) {
         }
 
         CommandCode_t command = (CommandCode_t)buff[0];
-        Action_t action;
 
         switch(command) {
         case CMD_NOP:
@@ -67,17 +62,22 @@ void vUSBTask(void*) {
             break;
         case CMD_QUERY_WRN_MAX:
             break;
-        case CMD_READ_BYTE:
+        case CMD_READ_BYTE: {
+            Action_t action;
 
             action.proc = Action_t::proceeding::Read;
             action.addr = buff[0] | buff[1] << 8 | buff[2] << 16;
             action.len = 1;
 
-            xQueueSend(QActionQueue, &action, MAX_DELAY);
-            xQueueReceive(RActionQueue, &rbuff[0], MAX_DELAY);
-            printf("%c", rbuff[0]);
+            uint8_t value;
 
-            break;
+            xQueueSend(QActionQueue, &action, MAX_DELAY);
+            xQueueReceive(RActionQueue, &value, MAX_DELAY);
+
+            printf("%c", value);
+
+        } break;
+
         case CMD_READ_NBYTES:
         case CMD_OP_INIT:
         case CMD_OP_WRITE_BYTE:
@@ -98,7 +98,5 @@ void vUSBTask(void*) {
 
         memset(&buff, 0, index);
         index = 0;
-        memset(&rbuff, 0, action.len);
-        memset(&action, 0, sizeof(Action_t));
     }
 }
