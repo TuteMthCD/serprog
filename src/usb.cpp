@@ -69,13 +69,12 @@ void vUSBTask(void*) {
             action.addr = buff[0] | buff[1] << 8 | buff[2] << 16;
             action.len = 1;
 
-            uint8_t value;
-
             xQueueSend(QActionQueue, &action, MAX_DELAY);
+
+            uint8_t value;
             xQueueReceive(RActionQueue, &value, MAX_DELAY);
 
-            printf("%c", value);
-
+            putchar(value);
         } break;
 
         case CMD_READ_NBYTES:

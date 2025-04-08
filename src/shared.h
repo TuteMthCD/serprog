@@ -52,7 +52,7 @@ struct Action_t {
     uint8_t data[];
 };
 
-#define QACTION_QUEUE_LEN 128
+#define QACTION_QUEUE_LEN 1
 static QueueHandle_t QActionQueue;
 
 #define RACTION_QUEUE_LEN 256
