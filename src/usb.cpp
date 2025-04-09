@@ -79,7 +79,18 @@ void vUSBTask(void*) {
 
         case CMD_READ_NBYTES:
         case CMD_OP_INIT:
-        case CMD_OP_WRITE_BYTE:
+        case CMD_OP_WRITE_BYTE: {
+            Action_t action;
+
+            action.proc = Action_t::proceeding::Write;
+            action.addr = buff[1] | buff[2] << 8 | buff[3] << 16;
+            action.len = 1;
+            action.data[0] = buff[4];
+
+            xQueueSend(QActionQueue, &action, MAX_DELAY);
+            putchar(ACK);
+        } break;
+
         case CMD_OP_WRITE_N:
         case CMD_OP_DELAY_US:
         case CMD_OP_EXECUTE:
