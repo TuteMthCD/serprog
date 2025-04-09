@@ -66,7 +66,7 @@ void vUSBTask(void*) {
             Action_t action;
 
             action.proc = Action_t::proceeding::Read;
-            action.addr = buff[0] | buff[1] << 8 | buff[2] << 16;
+            action.addr = buff[1] | buff[2] << 8 | buff[3] << 16;
             action.len = 1;
 
             xQueueSend(QActionQueue, &action, MAX_DELAY);
