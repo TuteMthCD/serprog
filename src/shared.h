@@ -11,20 +11,20 @@
 #define TASK_HIGH 4
 #define TASK_CRITICAL 5
 
-#define SERPROG_NAME "RP2040serprog"
+#define SERPROG_NAME "RP2040serprog\n"
 #define MAX_BUFFER_SIZE 256
 
 struct Action_t {
     enum proceeding { Read, Write, Pin } proc;
+
+    TaskHandle_t handle;
+
     int32_t addr;
     size_t len;
     uint8_t data[MAX_BUFFER_SIZE];
 };
 
-#define QACTION_QUEUE_LEN 128
-static QueueHandle_t QActionQueue;
-
-#define RACTION_QUEUE_LEN 256
-static QueueHandle_t RActionQueue;
+#define ACTION_QUEUE_LEN 128
+static QueueHandle_t ActionQueue;
 
 void vUSBTask(void*);

@@ -4,6 +4,8 @@
 #include "hardware/spi.h"
 
 #include "shared.h"
+#include <cstddef>
+#include <cstdlib>
 
 
 static inline void setCS(uint cs, int set) {
@@ -12,29 +14,24 @@ static inline void setCS(uint cs, int set) {
     asm volatile("nop \n nop \n nop"); // FIXME
 }
 
-void read(Action_t action) {
-    uint8_t buff[action.len];
-    uint8_t readAddr[4] = { 0x03, uint8_t(action.addr >> 16), uint8_t(action.addr >> 8), uint8_t(action.addr) };
+void read(Action_t* action) {
+    uint8_t readAddr[4] = { 0x03, uint8_t(action->addr >> 16), uint8_t(action->addr >> 8), uint8_t(action->addr) };
 
     setCS(PICO_DEFAULT_SPI_CSN_PIN, 0);
 
     spi_write_blocking(spi_default, readAddr, 4);
-    spi_read_blocking(spi_default, 0, buff, action.len);
+    spi_read_blocking(spi_default, 0, action->data, action->len);
 
     setCS(PICO_DEFAULT_SPI_CSN_PIN, 1);
-
-    for(uint8_t value : buff) {
-        xQueueSend(RActionQueue, &value, MAX_DELAY);
-    }
 }
 
-void write(Action_t action) {
-    uint8_t writeAddr[4] = { 0x03, uint8_t(action.addr >> 16), uint8_t(action.addr >> 8), uint8_t(action.addr) };
+void write(Action_t* action) {
+    uint8_t writeAddr[4] = { 0x03, uint8_t(action->addr >> 16), uint8_t(action->addr >> 8), uint8_t(action->addr) };
 
     setCS(PICO_DEFAULT_SPI_CSN_PIN, 0);
 
     spi_write_blocking(spi_default, writeAddr, 4);
-    spi_write_blocking(spi_default, action.data, action.len);
+    spi_write_blocking(spi_default, action->data, action->len);
 
     setCS(PICO_DEFAULT_SPI_CSN_PIN, 1);
 }
@@ -51,11 +48,10 @@ void vProgrammerTask(void*) {
 
 
     while(true) {
-        Action_t action;
-        xQueueReceive(QActionQueue, &action, MAX_DELAY);
+        Action_t* action;
+        xQueueReceive(ActionQueue, &action, MAX_DELAY);
 
-        switch(action.proc) {
-
+        switch(action->proc) {
         case Action_t::Read:
             read(action);
             break;
@@ -63,9 +59,15 @@ void vProgrammerTask(void*) {
             write(action);
             break;
         case Action_t::Pin: {
-            uint8_t status = action.data[0];
+            uint8_t status = action->data[0];
             setCS(PICO_DEFAULT_SPI_CSN_PIN, status);
         } break;
+        }
+
+        if(action->handle != NULL) {
+            xTaskNotify(action->handle, 1, eSetBits);
+        } else {
+            free(action);
         }
     }
 }

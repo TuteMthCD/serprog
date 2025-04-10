@@ -29,8 +29,8 @@ int main() {
 
     /* INIT */
 
-    QActionQueue = xQueueCreate(QACTION_QUEUE_LEN, sizeof(Action_t));
-    RActionQueue = xQueueCreate(RACTION_QUEUE_LEN, sizeof(char));
+    ActionQueue = xQueueCreate(ACTION_QUEUE_LEN, sizeof(Action_t*));
+    ActionQueue = xQueueCreate(ACTION_QUEUE_LEN, sizeof(char));
 
     xTaskCreate(&vLedTask, "vLedTask", 256, NULL, TASK_IDLE, NULL);
     xTaskCreate(&vUSBTask, "vUSBTask", 2 * 1024, NULL, TASK_MEDIUM, NULL);
