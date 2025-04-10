@@ -25,6 +25,9 @@ struct Action_t {
 };
 
 #define ACTION_QUEUE_LEN 128
-static QueueHandle_t ActionQueue;
+
+extern QueueHandle_t ActionQueue;
+extern TaskHandle_t USBHandle;
 
 void vUSBTask(void*);
+void vProgrammerTask(void*);

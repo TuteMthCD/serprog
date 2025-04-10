@@ -1,8 +1,13 @@
+#include "FreeRTOSConfig.h"
 #include "shared.h"
 
 #include "pico/cyw43_arch.h"
 #include "pico/stdio.h"
 #include "pico/stdlib.h"
+
+
+TaskHandle_t USBHandle;
+QueueHandle_t ActionQueue;
 
 void vLedTask(void*) {
 
@@ -30,10 +35,10 @@ int main() {
     /* INIT */
 
     ActionQueue = xQueueCreate(ACTION_QUEUE_LEN, sizeof(Action_t*));
-    ActionQueue = xQueueCreate(ACTION_QUEUE_LEN, sizeof(char));
 
     xTaskCreate(&vLedTask, "vLedTask", 256, NULL, TASK_IDLE, NULL);
-    xTaskCreate(&vUSBTask, "vUSBTask", 2 * 1024, NULL, TASK_MEDIUM, NULL);
+    xTaskCreate(&vUSBTask, "vUSBTask", 2 * 1024, NULL, TASK_MEDIUM, &USBHandle);
+    xTaskCreate(&vProgrammerTask, "read", 256, NULL, TASK_HIGH, NULL);
 
     vTaskStartScheduler();
 }

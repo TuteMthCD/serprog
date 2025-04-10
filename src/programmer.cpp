@@ -5,6 +5,7 @@
 
 #include "shared.h"
 #include <cstddef>
+#include <cstdio>
 #include <cstdlib>
 
 

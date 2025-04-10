@@ -76,7 +76,8 @@ constexpr size_t commandLength(const CommandCode_t& cmd) {
     return 0;
 }
 
-inline uint32_t convert(uint8_t* p, size_t len) {
+// little endian
+inline uint32_t littleEndian(uint8_t* p, size_t len) {
     uint32_t value = 0;
     for(int i = 0; i < len; i++) {
         value |= (uint32_t)p[i] << (8 * i);
@@ -102,7 +103,7 @@ void read(uint32_t addr, size_t len) {
         putchar(NAK);
     }
 
-    free(p);
+    delete p;
 }
 int write(); // TODO
 
@@ -149,14 +150,16 @@ void vUSBTask(void*) {
             putchar(NAK);
             break;
         case CMD_READ_BYTE: {
-            uint32_t addr = convert(buff.data(), ADDR_LEN);
+            uint32_t addr = littleEndian(buff.data(), ADDR_LEN);
             read(addr, 1);
+            break;
         }
         case CMD_READ_NBYTES: {
-            uint32_t addr = convert(buff.data(), ADDR_LEN);
-            uint32_t len = convert(buff.data() + ADDR_LEN, N_LEN);
+            uint32_t addr = littleEndian(buff.data(), ADDR_LEN);
+            uint32_t len = littleEndian(buff.data() + ADDR_LEN, N_LEN);
 
             read(addr, len);
+            break;
         }
         case CMD_OP_INIT:
         case CMD_OP_WRITE_BYTE:
