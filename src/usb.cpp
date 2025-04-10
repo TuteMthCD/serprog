@@ -5,11 +5,7 @@
 #include "pico/stdlib.h"
 
 #include <array>
-#include <cstdarg>
-#include <cstddef>
-#include <cstdint>
 #include <cstdio>
-#include <cstdlib>
 
 
 typedef enum {
@@ -62,7 +58,7 @@ constexpr size_t commandLength(const CommandCode_t& cmd) {
     case CMD_SET_BUSTYPE:
         return 1;
     case CMD_OP_SPI_TRANSFER:
-        return 6; // + data
+        return ADDR_LEN + N_LEN; // + data
     case CMD_SET_SPI_FREQ:
         return 4;
     case CMD_SET_PIN_STATE:
@@ -85,6 +81,13 @@ inline uint32_t littleEndian(uint8_t* p, size_t len) {
     return value;
 }
 
+void putArray(uint8_t* p, uint32_t len) {
+    putchar(ACK);
+    for(int i = 0; i < len; i++) {
+        putchar(p[i]);
+    }
+}
+
 void read(uint32_t addr, size_t len) {
     Action_t* p = new Action_t();
 
@@ -95,10 +98,10 @@ void read(uint32_t addr, size_t len) {
     p->len = len;
 
     xQueueSend(ActionQueue, &p, MAX_DELAY);
-    size_t notify = xTaskNotifyWait(0x01, 0x00, NULL, MAX_DELAY);
+    size_t notify = xTaskNotifyWait(0x00, 0x00, NULL, MAX_DELAY);
 
     if(notify) {
-        printf("%c%.*s", ACK, p->len, p->data);
+        putArray(p->data, p->len);
     } else {
         putchar(NAK);
     }
@@ -125,24 +128,27 @@ void vUSBTask(void*) {
         case CMD_NOP:
             putchar(ACK);
             break;
-        case CMD_QUERY_IFACE:
-            printf("%c%c%c", ACK, 0x00, 0x01);
-            break;
-        case CMD_QUERY_COMMANDS:
-            putchar(ACK);
-            for(int i = 0; i < 32; i++) {
-                putchar(0);
-            }
-            break;
-        case CMD_QUERY_NAME:
-            printf("%c%s", ACK, SERPROG_NAME);
-            break;
-        case CMD_QUERY_SERBUF:
-            printf("%c%c%c", ACK, MAX_BUFFER_SIZE >> 8, MAX_BUFFER_SIZE);
-            break;
-        case CMD_QUERY_BUSTYPE:
-            printf("%c%c", ACK, 0);
-            break;
+        case CMD_QUERY_IFACE: {
+            uint8_t data[] = { ACK, 0x00, 0x01 };
+            putArray(data, sizeof(data));
+
+        } break;
+        case CMD_QUERY_COMMANDS: {
+            uint8_t data[32] = { 0 };
+            putArray(data, sizeof(data));
+        } break;
+        case CMD_QUERY_NAME: {
+            uint8_t name[] = SERPROG_NAME;
+            putArray(name, sizeof(name));
+        } break;
+        case CMD_QUERY_SERBUF: {
+            uint8_t data[] = { static_cast<uint8_t>(MAX_BUFFER_SIZE >> 8), static_cast<uint8_t>(MAX_BUFFER_SIZE) };
+            putArray(data, sizeof(data));
+        } break;
+        case CMD_QUERY_BUSTYPE: {
+            uint8_t data[1] = { 0 };
+            putArray(data, 1);
+        } break;
         case CMD_QUERY_OPBUF:
             putchar(NAK);
             break;
@@ -172,6 +178,7 @@ void vUSBTask(void*) {
         case CMD_OP_SPI_TRANSFER:
         case CMD_SET_SPI_FREQ:
         default:
+            putchar(NAK);
             break;
         }
     }
