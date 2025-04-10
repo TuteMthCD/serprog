@@ -149,10 +149,15 @@ void vUSBTask(void*) {
             putchar(NAK);
             break;
         case CMD_READ_BYTE: {
-            uint32_t addr = convert(buff.data(), 3);
+            uint32_t addr = convert(buff.data(), ADDR_LEN);
             read(addr, 1);
         }
-        case CMD_READ_NBYTES:
+        case CMD_READ_NBYTES: {
+            uint32_t addr = convert(buff.data(), ADDR_LEN);
+            uint32_t len = convert(buff.data() + ADDR_LEN, N_LEN);
+
+            read(addr, len);
+        }
         case CMD_OP_INIT:
         case CMD_OP_WRITE_BYTE:
         case CMD_OP_WRITE_N:
