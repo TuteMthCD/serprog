@@ -2,10 +2,9 @@
 #include "boards/pico_w.h"
 #include "hardware/gpio.h"
 #include "hardware/spi.h"
+
 #include "shared.h"
 
-#include <cstdint>
-#include <cstdio>
 
 static inline void setCS(uint cs, int set) {
     asm volatile("nop \n nop \n nop"); // FIXME
@@ -49,6 +48,7 @@ void vProgrammerTask(void*) {
     gpio_init(PICO_DEFAULT_SPI_CSN_PIN);
     gpio_put(PICO_DEFAULT_SPI_CSN_PIN, 1);
     gpio_set_dir(PICO_DEFAULT_SPI_CSN_PIN, GPIO_OUT);
+
 
     while(true) {
         Action_t action;

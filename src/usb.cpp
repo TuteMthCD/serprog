@@ -3,94 +3,122 @@
 #include "pico/stdio.h"
 #include "pico/stdlib.h"
 
-#include <cstdint>
+#include <array>
+#include <cstdarg>
 #include <cstdio>
-#include <cstdlib>
-#include <string.h>
 
-#define MAX_BUFFER_SIZE 128
+
+typedef enum {
+    ACK = 0x06, // Acknowledge (respuesta positiva)
+    NAK = 0x15, // Negative Acknowledge (respuesta negativa)
+
+    CMD_NOP = 0x00,            // No hacer nada
+    CMD_QUERY_IFACE = 0x01,    // Consultar versión de interfaz
+    CMD_QUERY_COMMANDS = 0x02, // Consultar comandos soportados
+    CMD_QUERY_NAME = 0x03,     // Consultar nombre del programador
+    CMD_QUERY_SERBUF = 0x04,   // Consultar tamaño del buffer serie
+    CMD_QUERY_BUSTYPE = 0x05,  // Consultar tipos de bus soportados
+    CMD_QUERY_CHIPSIZE = 0x06, // Consultar tamaño del chip (formato 2^n)
+    CMD_QUERY_OPBUF = 0x07,    // Consultar tamaño del buffer de operaciones
+    CMD_QUERY_WRN_MAX = 0x08,  // Consultar longitud máxima para escritura múltiple
+
+    CMD_READ_BYTE = 0x09,   // Leer un byte
+    CMD_READ_NBYTES = 0x0A, // Leer N bytes
+
+    CMD_OP_INIT = 0x0B,       // Inicializar buffer de operaciones
+    CMD_OP_WRITE_BYTE = 0x0C, // Escribir byte con dirección en buffer
+    CMD_OP_WRITE_N = 0x0D,    // Escribir N bytes en buffer
+    CMD_OP_DELAY_US = 0x0E,   // Agregar retardo en microsegundos
+    CMD_OP_EXECUTE = 0x0F,    // Ejecutar el buffer de operaciones
+
+    CMD_SYNC_NOP = 0x10,      // NOP especial que responde NAK+ACK
+    CMD_QUERY_RDN_MAX = 0x11, // Consultar cantidad máxima de lectura múltiple
+
+    CMD_SET_BUSTYPE = 0x12,     // Establecer tipo(s) de bus a usar
+    CMD_OP_SPI_TRANSFER = 0x13, // Realizar operación SPI
+    CMD_SET_SPI_FREQ = 0x14,    // Configurar frecuencia del reloj SPI
+    CMD_SET_PIN_STATE = 0x15    // Activar/desactivar drivers de salida
+} CommandCode_t;
+
+
+constexpr size_t commandLength(const CommandCode_t& cmd) {
+    switch(cmd) {
+    case CMD_READ_BYTE:
+        return 3;
+    case CMD_READ_NBYTES:
+        return 6;
+    case CMD_OP_WRITE_BYTE:
+        return 4;
+    case CMD_OP_WRITE_N:
+        return 6; //+ data
+    case CMD_OP_DELAY_US:
+        return 4;
+    case CMD_SET_BUSTYPE:
+        return 1;
+    case CMD_OP_SPI_TRANSFER:
+        return 6; // + data
+    case CMD_SET_SPI_FREQ:
+        return 4;
+    case CMD_SET_PIN_STATE:
+        return 1;
+
+    // other not have parameters
+    default:
+        break;
+    }
+
+    return 0;
+}
+
+int read(); // TODO
+int write(); //TODO
 
 void vUSBTask(void*) {
-    char* buff = (char*)malloc(sizeof(char) * MAX_BUFFER_SIZE);
-    memset(buff, 0, MAX_BUFFER_SIZE);
+    std::array<uint8_t, MAX_BUFFER_SIZE> buff = { 0 };
 
     stdio_flush();
 
-    int index = 0;
-    int c = '\n';
-
     while(true) {
-        while(index < MAX_BUFFER_SIZE) {
-            c = getchar();
-            buff[index++] = c;
+        char inputCommand = getchar();
+        CommandCode_t cmd = static_cast<CommandCode_t>(inputCommand);
+        size_t len = commandLength(cmd);
 
-            if(c == '\n') {
-                break;
-            }
+        for(size_t i = 0; i < len; i++) {
+            buff[i] = getchar();
         }
 
-        CommandCode_t command = (CommandCode_t)buff[0];
-
-        switch(command) {
+        switch(cmd) {
         case CMD_NOP:
             putchar(ACK);
             break;
-
         case CMD_QUERY_IFACE:
-            putchar(ACK);
-            printf("%c%c", 0x00, 0x01);
+            printf("%c%c%c", ACK, 0x00, 0x01);
             break;
-
         case CMD_QUERY_COMMANDS:
             putchar(ACK);
             for(int i = 0; i < 32; i++) {
-                putchar(CMD_NOP);
+                putchar(0);
             }
             break;
-
         case CMD_QUERY_NAME:
-            printf("%c%16s", ACK, SERPROG_NAME);
+            printf("%c%s", ACK, SERPROG_NAME);
             break;
-
         case CMD_QUERY_SERBUF:
-            printf("%c%d", ACK, (uint16_t)MAX_BUFFER_SIZE);
+            printf("%c%c%c", ACK, MAX_BUFFER_SIZE >> 8, MAX_BUFFER_SIZE);
             break;
-
         case CMD_QUERY_BUSTYPE:
+            printf("%c%c", ACK, 0);
             break;
         case CMD_QUERY_OPBUF:
+            putchar(NAK);
             break;
         case CMD_QUERY_WRN_MAX:
+            putchar(NAK);
             break;
-        case CMD_READ_BYTE: {
-            Action_t action;
-
-            action.proc = Action_t::proceeding::Read;
-            action.addr = buff[1] | buff[2] << 8 | buff[3] << 16;
-            action.len = 1;
-
-            xQueueSend(QActionQueue, &action, MAX_DELAY);
-
-            uint8_t value;
-            xQueueReceive(RActionQueue, &value, MAX_DELAY);
-
-            putchar(value);
-        } break;
-
+        case CMD_READ_BYTE:
         case CMD_READ_NBYTES:
         case CMD_OP_INIT:
-        case CMD_OP_WRITE_BYTE: {
-            Action_t action;
-
-            action.proc = Action_t::proceeding::Write;
-            action.addr = buff[1] | buff[2] << 8 | buff[3] << 16;
-            action.len = 1;
-            action.data[0] = buff[4];
-
-            xQueueSend(QActionQueue, &action, MAX_DELAY);
-            putchar(ACK);
-        } break;
-
+        case CMD_OP_WRITE_BYTE:
         case CMD_OP_WRITE_N:
         case CMD_OP_DELAY_US:
         case CMD_OP_EXECUTE:
@@ -99,14 +127,8 @@ void vUSBTask(void*) {
         case CMD_SET_BUSTYPE:
         case CMD_OP_SPI_TRANSFER:
         case CMD_SET_SPI_FREQ:
-            break;
-
-        case ACK:
-        case NAK:
+        default:
             break;
         }
-
-        memset(&buff, 0, index);
-        index = 0;
     }
 }
