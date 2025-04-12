@@ -174,7 +174,7 @@ void vUSBTask(void*) {
             putArray(data, sizeof(data));
         } break;
         case CMD_QUERY_BUSTYPE: {
-            uint8_t data[1] = { 0 };
+            uint8_t data[1] = { 0b00001000 };
             putArray(data, 1);
         } break;
         case CMD_QUERY_OPBUF: {
@@ -223,10 +223,23 @@ void vUSBTask(void*) {
         } break;
 
         case CMD_OP_EXECUTE:
-        case CMD_QUERY_RDN_MAX:
+            putchar(ACK);
+            break;
+
+        case CMD_QUERY_RDN_MAX: {
+            uint8_t data[] = { static_cast<uint8_t>(MAX_BUFFER_SIZE >> 8), static_cast<uint8_t>(MAX_BUFFER_SIZE) };
+            putArray(data, sizeof(data));
+        } break;
+
+
         case CMD_SET_BUSTYPE:
+            putchar(NAK);
+            break;
         case CMD_OP_SPI_TRANSFER:
-        case CMD_SET_SPI_FREQ:
+            putchar(NAK);
+            break;
+
+        case CMD_SET_SPI_FREQ: // TODO
         default:
             putchar(NAK);
             break;
