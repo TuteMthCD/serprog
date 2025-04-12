@@ -178,8 +178,7 @@ void vUSBTask(void*) {
             putArray(data, 1);
         } break;
         case CMD_QUERY_OPBUF: {
-            // uint8_t data[] = { static_cast<uint8_t>(ACTION_QUEUE_LEN >> 8), static_cast<uint8_t>(ACTION_QUEUE_LEN) };
-            uint8_t data[] = { 0x00, 0x01 }; // QSYO AMIGO 1(UNO) no se que carajo me pedis, te lo dibujo
+            uint8_t data[] = { static_cast<uint8_t>(MAX_BUFFER_SIZE >> 8), static_cast<uint8_t>(MAX_BUFFER_SIZE) };
             putArray(data, sizeof(data));
         } break;
         case CMD_QUERY_WRN_MAX: {
@@ -215,6 +214,7 @@ void vUSBTask(void*) {
             break;
 
         case CMD_OP_DELAY_US:
+
         case CMD_OP_EXECUTE:
         case CMD_QUERY_RDN_MAX:
         case CMD_SET_BUSTYPE:
