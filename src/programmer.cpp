@@ -27,7 +27,7 @@ void read(Action_t* action) {
 }
 
 void write(Action_t* action) {
-    uint8_t writeAddr[4] = { 0x03, uint8_t(action->addr >> 16), uint8_t(action->addr >> 8), uint8_t(action->addr) };
+    uint8_t writeAddr[4] = { 0x06, uint8_t(action->addr >> 16), uint8_t(action->addr >> 8), uint8_t(action->addr) };
 
     setCS(PICO_DEFAULT_SPI_CSN_PIN, 0);
 
