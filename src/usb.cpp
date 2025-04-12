@@ -195,7 +195,11 @@ void vUSBTask(void*) {
 
             read(addr, len);
         } break;
-        case CMD_OP_INIT:
+        case CMD_OP_INIT: {
+            for(uint8_t& c : buff) {
+                c = 0;
+            }
+        } break;
         case CMD_OP_WRITE_BYTE: {
             uint32_t addr = littleEndian(buff.data(), ADDR_LEN);
             write(addr, buff.data() + ADDR_LEN, 1);
@@ -213,7 +217,10 @@ void vUSBTask(void*) {
             putchar(ACK);
             break;
 
-        case CMD_OP_DELAY_US:
+        case CMD_OP_DELAY_US: {
+            uint32_t delay = littleEndian(buff.data(), 4);
+            vTaskDelay(delay / configTICK_RATE_HZ);
+        } break;
 
         case CMD_OP_EXECUTE:
         case CMD_QUERY_RDN_MAX:
