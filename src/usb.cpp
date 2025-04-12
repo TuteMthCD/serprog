@@ -5,6 +5,8 @@
 #include "pico/stdlib.h"
 
 #include <array>
+#include <cstddef>
+#include <cstdint>
 #include <cstdio>
 
 
@@ -89,6 +91,7 @@ void putArray(uint8_t* p, uint32_t len) {
 }
 
 void read(uint32_t addr, size_t len) {
+    configASSERT(len > MAX_BUFFER_SIZE);
     Action_t* p = new Action_t();
 
     p->handle = xTaskGetCurrentTaskHandle();
@@ -108,7 +111,33 @@ void read(uint32_t addr, size_t len) {
 
     delete p;
 }
-int write(); // TODO
+void write(uint32_t addr, uint8_t* data, size_t len) {
+    configASSERT(len > MAX_BUFFER_SIZE);
+    Action_t* p = new Action_t();
+
+    // p->handle = NULL; // if null, programmer delete action.
+    p->handle = xTaskGetCurrentTaskHandle();
+
+    p->proc = Action_t::Write;
+    p->addr = addr;
+    p->len = len;
+
+    for(int i = 0; i < len; i++) {
+        p->data[i] = data[i];
+    }
+
+    xQueueSend(ActionQueue, &p, MAX_DELAY);
+    size_t notify = xTaskNotifyWait(0x00, 0x00, NULL, MAX_DELAY);
+
+    if(notify) {
+        putchar(ACK);
+    } else {
+        putchar(NAK);
+    }
+
+    // if(p->handle == NULL) return;
+    delete p;
+}
 
 void vUSBTask(void*) {
     std::array<uint8_t, MAX_BUFFER_SIZE> buff = { 0 };
@@ -131,7 +160,6 @@ void vUSBTask(void*) {
         case CMD_QUERY_IFACE: {
             uint8_t data[] = { ACK, 0x00, 0x01 };
             putArray(data, sizeof(data));
-
         } break;
         case CMD_QUERY_COMMANDS: {
             uint8_t data[32] = { 0 };
@@ -158,21 +186,33 @@ void vUSBTask(void*) {
         case CMD_READ_BYTE: {
             uint32_t addr = littleEndian(buff.data(), ADDR_LEN);
             read(addr, 1);
-            break;
-        }
+        } break;
         case CMD_READ_NBYTES: {
             uint32_t addr = littleEndian(buff.data(), ADDR_LEN);
             uint32_t len = littleEndian(buff.data() + ADDR_LEN, N_LEN);
 
             read(addr, len);
-            break;
-        }
+        } break;
         case CMD_OP_INIT:
-        case CMD_OP_WRITE_BYTE:
-        case CMD_OP_WRITE_N:
+        case CMD_OP_WRITE_BYTE: {
+            uint32_t addr = littleEndian(buff.data(), ADDR_LEN);
+            write(addr, buff.data() + ADDR_LEN, 1);
+
+        } break;
+        case CMD_OP_WRITE_N: {
+            uint32_t addr = littleEndian(buff.data(), ADDR_LEN);
+            uint32_t len = littleEndian(buff.data() + ADDR_LEN, N_LEN);
+
+            write(addr, buff.data() + ADDR_LEN + N_LEN, len);
+        } break;
+
+        case CMD_SYNC_NOP:
+            putchar(NAK);
+            putchar(ACK);
+            break;
+
         case CMD_OP_DELAY_US:
         case CMD_OP_EXECUTE:
-        case CMD_SYNC_NOP:
         case CMD_QUERY_RDN_MAX:
         case CMD_SET_BUSTYPE:
         case CMD_OP_SPI_TRANSFER:
