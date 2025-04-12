@@ -11,35 +11,35 @@
 
 
 typedef enum {
-    ACK = 0x06, // Acknowledge (respuesta positiva)
-    NAK = 0x15, // Negative Acknowledge (respuesta negativa)
+    ACK = 0x06, // Acknowledge (positive response)
+    NAK = 0x15, // Negative Acknowledge (negative response)
 
-    CMD_NOP = 0x00,            // No hacer nada
-    CMD_QUERY_IFACE = 0x01,    // Consultar versión de interfaz
-    CMD_QUERY_COMMANDS = 0x02, // Consultar comandos soportados
-    CMD_QUERY_NAME = 0x03,     // Consultar nombre del programador
-    CMD_QUERY_SERBUF = 0x04,   // Consultar tamaño del buffer serie
-    CMD_QUERY_BUSTYPE = 0x05,  // Consultar tipos de bus soportados
-    CMD_QUERY_CHIPSIZE = 0x06, // Consultar tamaño del chip (formato 2^n)
-    CMD_QUERY_OPBUF = 0x07,    // Consultar tamaño del buffer de operaciones
-    CMD_QUERY_WRN_MAX = 0x08,  // Consultar longitud máxima para escritura múltiple
+    CMD_NOP = 0x00,            // Do nothing
+    CMD_QUERY_IFACE = 0x01,    // Query interface version
+    CMD_QUERY_COMMANDS = 0x02, // Query supported commands
+    CMD_QUERY_NAME = 0x03,     // Query programmer name
+    CMD_QUERY_SERBUF = 0x04,   // Query serial buffer size
+    CMD_QUERY_BUSTYPE = 0x05,  // Query supported bus types
+    CMD_QUERY_CHIPSIZE = 0x06, // Query chip size (2^n format)
+    CMD_QUERY_OPBUF = 0x07,    // Query operation buffer size
+    CMD_QUERY_WRN_MAX = 0x08,  // Query max length for multi-byte write
 
-    CMD_READ_BYTE = 0x09,   // Leer un byte
-    CMD_READ_NBYTES = 0x0A, // Leer N bytes
+    CMD_READ_BYTE = 0x09,   // Read one byte
+    CMD_READ_NBYTES = 0x0A, // Read N bytes
 
-    CMD_OP_INIT = 0x0B,       // Inicializar buffer de operaciones
-    CMD_OP_WRITE_BYTE = 0x0C, // Escribir byte con dirección en buffer
-    CMD_OP_WRITE_N = 0x0D,    // Escribir N bytes en buffer
-    CMD_OP_DELAY_US = 0x0E,   // Agregar retardo en microsegundos
-    CMD_OP_EXECUTE = 0x0F,    // Ejecutar el buffer de operaciones
+    CMD_OP_INIT = 0x0B,       // Initialize operation buffer
+    CMD_OP_WRITE_BYTE = 0x0C, // Write byte with address into buffer
+    CMD_OP_WRITE_N = 0x0D,    // Write N bytes into buffer
+    CMD_OP_DELAY_US = 0x0E,   // Add delay in microseconds
+    CMD_OP_EXECUTE = 0x0F,    // Execute operation buffer
 
-    CMD_SYNC_NOP = 0x10,      // NOP especial que responde NAK+ACK
-    CMD_QUERY_RDN_MAX = 0x11, // Consultar cantidad máxima de lectura múltiple
+    CMD_SYNC_NOP = 0x10,      // Special NOP that responds with NAK+ACK
+    CMD_QUERY_RDN_MAX = 0x11, // Query max length for multi-byte read
 
-    CMD_SET_BUSTYPE = 0x12,     // Establecer tipo(s) de bus a usar
-    CMD_OP_SPI_TRANSFER = 0x13, // Realizar operación SPI
-    CMD_SET_SPI_FREQ = 0x14,    // Configurar frecuencia del reloj SPI
-    CMD_SET_PIN_STATE = 0x15    // Activar/desactivar drivers de salida
+    CMD_SET_BUSTYPE = 0x12,     // Set bus type(s) to use
+    CMD_OP_SPI_TRANSFER = 0x13, // Perform SPI operation
+    CMD_SET_SPI_FREQ = 0x14,    // Set SPI clock frequency
+    CMD_SET_PIN_STATE = 0x15    // Enable/disable output drivers
 } CommandCode_t;
 
 #define ADDR_LEN 3
@@ -177,12 +177,15 @@ void vUSBTask(void*) {
             uint8_t data[1] = { 0 };
             putArray(data, 1);
         } break;
-        case CMD_QUERY_OPBUF:
-            putchar(NAK);
-            break;
-        case CMD_QUERY_WRN_MAX:
-            putchar(NAK);
-            break;
+        case CMD_QUERY_OPBUF: {
+            // uint8_t data[] = { static_cast<uint8_t>(ACTION_QUEUE_LEN >> 8), static_cast<uint8_t>(ACTION_QUEUE_LEN) };
+            uint8_t data[] = { 0x00, 0x01 }; // QSYO AMIGO 1(UNO) no se que carajo me pedis, te lo dibujo
+            putArray(data, sizeof(data));
+        } break;
+        case CMD_QUERY_WRN_MAX: {
+            uint8_t data[] = { static_cast<uint8_t>(MAX_BUFFER_SIZE >> 8), static_cast<uint8_t>(MAX_BUFFER_SIZE) };
+            putArray(data, sizeof(data));
+        } break;
         case CMD_READ_BYTE: {
             uint32_t addr = littleEndian(buff.data(), ADDR_LEN);
             read(addr, 1);
