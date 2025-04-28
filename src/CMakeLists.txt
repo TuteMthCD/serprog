@@ -2,6 +2,7 @@ add_executable(${ProjectName}
     main.cpp
     usb.cpp
     programmer.cpp
+    cmd.cpp
 )
 
 target_include_directories(${ProjectName} PRIVATE
